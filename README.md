@@ -18,11 +18,11 @@ Then, install the required dependencies:
 
 or if you didn't clone (might occur version conflicts):
 
-```pip install google-api-python-client```
+```pip install google-api-python-client==2.163.0```
 
 ## Usage
 
-First, place your Google API service account credentials json file in your working directory. The file structure might be like this:
+First, place your Google API service account credentials json file in your working directory. The file structure might look like this:
 
 ```
 .
@@ -38,7 +38,7 @@ from api import GoogleDriveClient
 client = GoogleDriveClient("path/to/credentials.json")
 ```
 
-Then, iter through images in your folder:
+If no error occurred, you can now iter through images in your folder:
 
 ```
 iter = client.iter_images("folder_id")
