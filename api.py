@@ -107,3 +107,26 @@ class GoogleDriveClient:
         except Exception as e:
             print(f"An error occurred while uploading the file: {e}")
             return None
+    def delete_folder_contents(self, folder_id: str):
+        """
+        Deletes all files within a specified folder but keeps the folder itself.
+
+        * folder_id: The ID of the Google Drive folder whose contents should be deleted.
+        """
+        try:
+            # List all files in the folder
+            files = self.list_files(folder_id)
+            
+            # Delete each file
+            for file in files:
+                try:
+                    self.service.files().delete(fileId=file['id']).execute()
+                    print(f"Deleted file: {file['name']}")
+                except Exception as e:
+                    print(f"Error deleting file {file['name']}: {e}")
+            
+            print(f"Successfully deleted all contents of folder {folder_id}")
+            return True
+        except Exception as e:
+            print(f"An error occurred while deleting folder contents: {e}")
+            return False
