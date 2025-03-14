@@ -45,7 +45,7 @@ class GoogleDriveClient:
             page_token = response.get("nextPageToken")
             if not page_token:
                 break
-    def download_file(self, file_id: str, destination: str | None = None):
+    def download_file(self, file_id: str, destination: str | None = None, verbose: bool = False):
         """
         Downloads a file from Google Drive using service account authentication.
 
@@ -64,9 +64,11 @@ class GoogleDriveClient:
                     for chunk in response.iter_content(chunk_size=1024):
                         if chunk:
                             f.write(chunk)
-                tqdm.write(f"File downloaded: {destination}")
+                if verbose:
+                    tqdm.write(f"File downloaded: {destination}")
         else:
-            tqdm.write(f"Failed to download file: {response.status_code} - {response.text}")
+            if verbose:
+                tqdm.write(f"Failed to download file: {response.status_code} - {response.text}")
     def iter_images(self, folder_id: str, page_size: int = 100):
         """
         Iterates through all images in the specified folder.
@@ -76,7 +78,7 @@ class GoogleDriveClient:
         """
         for file in self.list_files(folder_id, page_size):
             yield self.download_file(file["id"])
-    def upload_file(self, file_path: str, folder_id: str, file_name: str | None = None):
+    def upload_file(self, file_path: str, folder_id: str, file_name: str | None = None, verbose: bool = False):
         """
         Uploads a file to Google Drive using service account authentication.
 
@@ -103,12 +105,14 @@ class GoogleDriveClient:
                 media_body=media,
                 fields='id'
             ).execute()
-            tqdm.write(f"File uploaded successfully. File ID: {file.get('id')}")
+            if verbose:
+                tqdm.write(f"File uploaded successfully. File ID: {file.get('id')}")
             return file.get('id')
         except Exception as e:
-            tqdm.write(f"An error occurred while uploading the file: {e}")
+            if verbose:
+                tqdm.write(f"An error occurred while uploading the file: {e}")
             return None
-    def delete_folder_contents(self, folder_id: str):
+    def delete_folder_contents(self, folder_id: str, verbose: bool = False):
         """
         Deletes all files within a specified folder but keeps the folder itself.
 
@@ -122,12 +126,16 @@ class GoogleDriveClient:
             for file in files:
                 try:
                     self.service.files().delete(fileId=file['id']).execute()
-                    tqdm.write(f"Deleted file: {file['name']}")
+                    if verbose:
+                        tqdm.write(f"Deleted file: {file['name']}")
                 except Exception as e:
-                    tqdm.write(f"Error deleting file {file['name']}: {e}")
+                    if verbose:
+                        tqdm.write(f"Error deleting file {file['name']}: {e}")
             
-            tqdm.write(f"Successfully deleted all contents of folder {folder_id}")
+            if verbose:
+                tqdm.write(f"Successfully deleted all contents of folder {folder_id}")
             return True
         except Exception as e:
-            tqdm.write(f"An error occurred while deleting folder contents: {e}")
+            if verbose:
+                tqdm.write(f"An error occurred while deleting folder contents: {e}")
             return False
