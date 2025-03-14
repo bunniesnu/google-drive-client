@@ -1,6 +1,8 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 import requests
+import os
 
 class GoogleDriveClient:
     """
@@ -73,3 +75,35 @@ class GoogleDriveClient:
         """
         for file in self.list_files(folder_id, page_size):
             yield self.download_file(file["id"])
+    def upload_file(self, file_path: str, folder_id: str, file_name: str | None = None):
+        """
+        Uploads a file to Google Drive using service account authentication.
+
+        * file_path: The path to the file to upload.
+        * folder_id: The ID of the folder to upload the file to.
+        * file_name: Optional name for the file in Drive. If None, uses original filename.
+        """
+        if file_name is None:
+            file_name = os.path.basename(file_path)
+
+        file_metadata = {
+            'name': file_name,
+            'parents': [folder_id]
+        }
+
+        media = MediaFileUpload(
+            file_path,
+            resumable=True
+        )
+
+        try:
+            file = self.service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id'
+            ).execute()
+            print(f"File uploaded successfully. File ID: {file.get('id')}")
+            return file.get('id')
+        except Exception as e:
+            print(f"An error occurred while uploading the file: {e}")
+            return None
