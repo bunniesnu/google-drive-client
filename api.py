@@ -3,6 +3,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 import requests
 import os
+from tqdm import tqdm
 
 class GoogleDriveClient:
     """
@@ -63,9 +64,9 @@ class GoogleDriveClient:
                     for chunk in response.iter_content(chunk_size=1024):
                         if chunk:
                             f.write(chunk)
-                print(f"File downloaded: {destination}")
+                tqdm.write(f"File downloaded: {destination}")
         else:
-            print(f"Failed to download file: {response.status_code} - {response.text}")
+            tqdm.write(f"Failed to download file: {response.status_code} - {response.text}")
     def iter_images(self, folder_id: str, page_size: int = 100):
         """
         Iterates through all images in the specified folder.
@@ -102,10 +103,10 @@ class GoogleDriveClient:
                 media_body=media,
                 fields='id'
             ).execute()
-            print(f"File uploaded successfully. File ID: {file.get('id')}")
+            tqdm.write(f"File uploaded successfully. File ID: {file.get('id')}")
             return file.get('id')
         except Exception as e:
-            print(f"An error occurred while uploading the file: {e}")
+            tqdm.write(f"An error occurred while uploading the file: {e}")
             return None
     def delete_folder_contents(self, folder_id: str):
         """
@@ -121,12 +122,12 @@ class GoogleDriveClient:
             for file in files:
                 try:
                     self.service.files().delete(fileId=file['id']).execute()
-                    print(f"Deleted file: {file['name']}")
+                    tqdm.write(f"Deleted file: {file['name']}")
                 except Exception as e:
-                    print(f"Error deleting file {file['name']}: {e}")
+                    tqdm.write(f"Error deleting file {file['name']}: {e}")
             
-            print(f"Successfully deleted all contents of folder {folder_id}")
+            tqdm.write(f"Successfully deleted all contents of folder {folder_id}")
             return True
         except Exception as e:
-            print(f"An error occurred while deleting folder contents: {e}")
+            tqdm.write(f"An error occurred while deleting folder contents: {e}")
             return False
