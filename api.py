@@ -4,6 +4,7 @@ from googleapiclient.http import MediaFileUpload
 import requests
 import os
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor
 
 class GoogleDriveClient:
     """
@@ -78,6 +79,21 @@ class GoogleDriveClient:
         """
         for file in self.list_files(folder_id, page_size):
             yield self.download_file(file["id"])
+    def download_images(self, folder_id: str, destination_folder_path: str, page_size: int = 100, verbose: bool = False):
+        """
+        Downloads all images in the specified folder to a local directory.
+
+        * folder_id: The ID of the Google Drive folder to download images from.
+        * destination_folder_path: The path to save the images to.
+        * page_size: The number of files to fetch per page.
+        """
+        def download_task(file_id: str, file_name: str):
+            self.download_file(file_id, os.path.join(destination_folder_path, file_name), verbose)
+        files: list[tuple[str, str]] = []
+        for file in self.list_files(folder_id, page_size):
+            files.append((str(file["id"]), str(file["name"])))
+        with ThreadPoolExecutor() as executor:
+            executor.map(lambda args: download_task(*args), files)
     def upload_file(self, file_path: str, folder_id: str, file_name: str | None = None, verbose: bool = False):
         """
         Uploads a file to Google Drive using service account authentication.
