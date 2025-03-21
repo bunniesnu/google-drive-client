@@ -52,6 +52,7 @@ class GoogleDriveClient:
 
         * file_id: The ID of the file to download.
         * destination: The path to save the file to. If None, the file will be yielded.
+        * verbose: Whether to print download status messages.
         """
         headers = {"Authorization": f"Bearer {self.credentials.token}"}
         url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
@@ -68,7 +69,9 @@ class GoogleDriveClient:
                 if verbose:
                     tqdm.write(f"File downloaded: {file_id} -> {destination}")
         else:
-            tqdm.write(f"Failed to download file: {response.status_code} - {response.text}")
+            error_msg = f"Failed to download file: {response.status_code} - {response.text}"
+            tqdm.write(error_msg)
+            raise Exception(error_msg)
     def iter_images(self, folder_id: str, page_size: int = 100):
         """
         Iterates through all images in the specified folder.
@@ -110,6 +113,7 @@ class GoogleDriveClient:
         * file_path: The path to the file to upload.
         * folder_id: The ID of the folder to upload the file to.
         * file_name: Optional name for the file in Drive. If None, uses original filename.
+        * verbose: Whether to print upload status messages.
         """
         if file_name is None:
             file_name = os.path.basename(file_path)
@@ -142,6 +146,7 @@ class GoogleDriveClient:
         Deletes all files within a specified folder but keeps the folder itself.
 
         * folder_id: The ID of the Google Drive folder whose contents should be deleted.
+        * verbose: Whether to print status messages.
         """
         try:
             # List all files in the folder
