@@ -4,7 +4,7 @@ from googleapiclient.http import MediaFileUpload
 import requests
 import os
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class GoogleDriveClient:
     """
@@ -66,10 +66,9 @@ class GoogleDriveClient:
                         if chunk:
                             f.write(chunk)
                 if verbose:
-                    tqdm.write(f"File downloaded: {destination}")
+                    tqdm.write(f"File downloaded: {file_id} -> {destination}")
         else:
-            if verbose:
-                tqdm.write(f"Failed to download file: {response.status_code} - {response.text}")
+            tqdm.write(f"Failed to download file: {response.status_code} - {response.text}")
     def iter_images(self, folder_id: str, page_size: int = 100):
         """
         Iterates through all images in the specified folder.
@@ -79,21 +78,31 @@ class GoogleDriveClient:
         """
         for file in self.list_files(folder_id, page_size):
             yield self.download_file(file["id"])
-    def download_images(self, folder_id: str, destination_folder_path: str, page_size: int = 100, verbose: bool = False):
+    def download_images(self, folder_id: str, destination_folder_path: str, page_size: int = 100, verbose: bool = False, show_progress: bool = True):
         """
         Downloads all images in the specified folder to a local directory.
 
         * folder_id: The ID of the Google Drive folder to download images from.
         * destination_folder_path: The path to save the images to.
         * page_size: The number of files to fetch per page.
+        * verbose: Whether to print download status messages.
+        * show_progress: Whether to display a progress bar.
         """
+        os.makedirs(destination_folder_path, exist_ok=True)
         def download_task(file_id: str, file_name: str):
             self.download_file(file_id, os.path.join(destination_folder_path, file_name), verbose)
         files: list[tuple[str, str]] = []
         for file in self.list_files(folder_id, page_size):
             files.append((str(file["id"]), str(file["name"])))
-        with ThreadPoolExecutor() as executor:
-            executor.map(lambda args: download_task(*args), files)
+        if show_progress:
+            with ThreadPoolExecutor() as executor, tqdm(total=len(files), desc=f"Downloading: {folder_id} -> {destination_folder_path}", ncols=100) as pbar:
+                futures = {executor.submit(download_task, file_id, file_name) for file_id, file_name in files}
+                for future in as_completed(futures):
+                    future.result()
+                    pbar.update(1)
+        else:
+            with ThreadPoolExecutor() as executor:
+                executor.map(lambda args: download_task(*args), files)
     def upload_file(self, file_path: str, folder_id: str, file_name: str | None = None, verbose: bool = False):
         """
         Uploads a file to Google Drive using service account authentication.
