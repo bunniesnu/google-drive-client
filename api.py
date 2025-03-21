@@ -81,7 +81,7 @@ class GoogleDriveClient:
         """
         for file in self.list_files(folder_id, page_size):
             yield self.download_file(file["id"])
-    def download_images(self, folder_id: str, destination_folder_path: str, page_size: int = 100, verbose: bool = False, show_progress: bool = True):
+    def download_images(self, folder_id: str, destination_folder_path: str, page_size: int = 100, verbose: bool = False, show_tqdm: bool = True):
         """
         Downloads all images in the specified folder to a local directory.
 
@@ -89,7 +89,7 @@ class GoogleDriveClient:
         * destination_folder_path: The path to save the images to.
         * page_size: The number of files to fetch per page.
         * verbose: Whether to print download status messages.
-        * show_progress: Whether to display a progress bar.
+        * show_tqdm: Whether to display a progress bar.
         """
         os.makedirs(destination_folder_path, exist_ok=True)
         def download_task(file_id: str, file_name: str):
@@ -97,7 +97,7 @@ class GoogleDriveClient:
         files: list[tuple[str, str]] = []
         for file in self.list_files(folder_id, page_size):
             files.append((str(file["id"]), str(file["name"])))
-        if show_progress:
+        if show_tqdm:
             with ThreadPoolExecutor() as executor, tqdm(total=len(files), desc=f"Downloading: {folder_id} -> {destination_folder_path}", ncols=100) as pbar:
                 futures = {executor.submit(download_task, file_id, file_name) for file_id, file_name in files}
                 for future in as_completed(futures):
